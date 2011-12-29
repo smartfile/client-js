@@ -14,8 +14,7 @@ Usage
 
 To test the Ajax library:
 
-python test.py
-http://localhost:8000/test.html
+    $ python test.py
 
 Contributors
 ------------

@@ -1,6 +1,6 @@
 #!/bin/env python
 
-import string, cgi, time
+import os, string, cgi, time, webbrowser
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 JSON = '{ text: "This is the response." }'
@@ -8,17 +8,18 @@ JSON = '{ text: "This is the response." }'
 class TestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            self.path, qs = self.path.split('?')
+            self.path, qs = self.path.split('?', 2)
             qs = cgi.parse_qs(qs)
-        except:
-            pass
+        except ValueError:
+            qs = {}
         try:
             if self.path == '/ajax/':
                 self.send_response(200)
                 self.send_header('Content-type', 'text/javascript')
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 if 'callback' in qs:
-                    self.wfile.write('%s(%s)' % (qs['callback'][0], JSON))
+                    self.wfile.write('%s(%s);' % (qs['callback'][0], JSON))
                 else:
                     self.wfile.write(JSON)
                 return
@@ -40,6 +41,7 @@ class TestHandler(BaseHTTPRequestHandler):
 
 def main():
     try:
+        webbrowser.open('file://%s' % os.path.join(os.getcwd(), 'test.html'))
         server = HTTPServer(('localhost', 8000), TestHandler)
         server.serve_forever()
     except KeyboardInterrupt:
