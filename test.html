@@ -1,0 +1,22 @@
+<html>
+<body>
+    Response: <div id="div-response"></div>
+</body>
+<script type="text/javascript" src="smartfileapi.js"></script>
+<script type="text/javascript">
+<!--
+
+/*makeRequest('GET', 'http://localhost:8000/ajax/', null, function(json) {
+    document.getElementById('div-response').innerHTML = json.text;
+});*/
+
+var request = new JSONPRequest();
+request.open('GET', 'http://localhost:8000/ajax/', true);
+request.onreadystatechange = function(json) {
+    document.getElementById('div-response').innerHTML = json.text;
+};
+request.send();
+
+//-->
+</script>
+</html>
