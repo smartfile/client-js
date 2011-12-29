@@ -39,9 +39,12 @@ var SmartFile = SmartFile || (function() {
         sTag.setAttribute('src', this.url);
         // Insert script tag to start the request.
         document.getElementsByTagName('body')[0].appendChild(sTag);
+        // TODO: handle failure by using onload? setTimeout()?
     };
 
     return {
+        JSONPRequest: JSONPRequest,
+
         /* Creates a Request object of the correct type and performs an ajax call. */
         makeRequest: function(method, url, data, callback) {
             // TODO: determine if the call is cross-domain or not. If not, just use XmlHttpRequest.
@@ -60,8 +63,11 @@ var SmartFile = SmartFile || (function() {
                 request.onreadystatechange = callback;
             } else {
                 request.onreadystatechange = function(e) {
-                    if (request.readyState == 4)
-                        callback(eval('(' + request.responseText + ')'));
+                    if (request.readyState == 4) {
+                        if (request.status >= 200 && request.status < 300)
+                            callback(eval('(' + request.responseText + ')'));
+                        // TODO: handle failure.
+                    }
                 }
             }
             if (request == 'GET')

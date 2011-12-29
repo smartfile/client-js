@@ -16,6 +16,8 @@ To test the Ajax library:
 
     $ python test.py
 
+This will start a server for handling the ajax call. Your browser will be started and test.html will be loaded from the file system. This sets up a cross-domain ajax call (localsystem -> localhost).
+
 Contributors
 ------------
  * Ben Timby <btimby@gmail.com>
