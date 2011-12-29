@@ -41,6 +41,7 @@ JSONPRequest.prototype.send = function(data) {
 /* Creates a Request object of the correct type and performs an ajax call.
 */
 var makeRequest = function(method, url, data, callback) {
+    // TODO: determine if the call is cross-domain or not. If not, just use XmlHttpRequest.
     var request = null;
     if (XMLHttpRequest) {
         var request = new XMLHttpRequest();
@@ -55,7 +56,7 @@ var makeRequest = function(method, url, data, callback) {
         request = JSONPRequest();
         request.onreadystatechange = callback;
     } else {
-        request.onreadystatechange = function(xhr) {
+        request.onreadystatechange = function(e) {
             if (request.readyState == 4)
                 callback(eval('(' + request.responseText + ')'));
         }
