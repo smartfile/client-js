@@ -1,9 +1,27 @@
 #!/bin/env python
 
-import os, string, cgi, time, webbrowser
+import os, string, cgi, time, webbrowser, threading, socket
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 JSON = '{ text: "This is the response." }'
+PORT = 8000
+
+class LaunchBrowser(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.start()
+
+    def run(self):
+        while True:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                s.connect(('localhost', PORT))
+                s.shutdown(2)
+                break
+            except:
+                time.sleep(0.5)
+        webbrowser.open('file://%s' % os.path.join(os.getcwd(), 'test.html'))
+
 
 class TestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -41,8 +59,8 @@ class TestHandler(BaseHTTPRequestHandler):
 
 def main():
     try:
-        webbrowser.open('file://%s' % os.path.join(os.getcwd(), 'test.html'))
-        server = HTTPServer(('localhost', 8000), TestHandler)
+        launch = LaunchBrowser()
+        server = HTTPServer(('localhost', PORT), TestHandler)
         server.serve_forever()
     except KeyboardInterrupt:
         server.socket.close()
