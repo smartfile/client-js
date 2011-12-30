@@ -6,16 +6,16 @@
 <script type="text/javascript">
 <!--
 
-/*SmartFile.makeRequest('GET', 'http://localhost:8000/ajax/', null, function(json) {
+SmartFile.makeRequest({ method: 'GET', url: 'http://localhost:8000/ajax/', success: function(json) {
     document.getElementById('div-response').innerHTML = json.text;
-});*/
+}});
 
-var request = new SmartFile.JSONPRequest();
+/*var request = new SmartFile.JSONPRequest();
 request.open('GET', 'http://localhost:8000/ajax/', true);
 request.onreadystatechange = function(json) {
     document.getElementById('div-response').innerHTML = json.text;
 };
-request.send();
+request.send();*/
 
 //-->
 </script>

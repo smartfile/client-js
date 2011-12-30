@@ -34,8 +34,8 @@ class TestHandler(BaseHTTPRequestHandler):
             if self.path == '/ajax/':
                 self.send_response(200)
                 self.send_header('Content-type', 'text/javascript')
-                if 'callback' in qs: #jsonp:
-                    self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Origin', self.headers.get('Origin', '*'))
+                self.send_header('Access-Control-Allow-Credentials', 'true')
                 self.end_headers()
                 if 'callback' in qs: #jsonp:
                     self.wfile.write('%s(%s);' % (qs['callback'][0], JSON))

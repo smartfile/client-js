@@ -1,13 +1,21 @@
 
 // Don't pollute the namespace or double-init.
 var SmartFile = SmartFile || (function() {
-    /* A class that emulates the XmlHttpRequest and XmlDomainRequest object.
-     Used when neither can be used for cross-domain requests. */
-    function JSONPRequest() {
+    Function.prototype.proxy = function(a, b) {
+        b = this;
+        return function() {
+            b.apply(a,arguments);
+        }
     };
 
-    JSONPRequest.prototype.open = function(method, url, async) {
-        if (method != 'GET')
+    /* A class that emulates the XmlHttpRequest and XmlDomainRequest object.
+     Used when neither can be used for cross-domain requests. */
+    var JSONPRequest = function(options) {
+        this.options = options;
+    };
+
+    JSONPRequest.prototype.open = function() {
+        if (this.options.method != 'GET')
             throw "Method not supported.";
         // Generate random identifier for this call.
         this.random = 'jsonp_';
@@ -15,69 +23,153 @@ var SmartFile = SmartFile || (function() {
             var r = Math.floor(Math.random() * 26);
             this.random += String.fromCharCode(65+r);
         }
-        var prefix = '?';
-        if (url.indexOf('?') != -1)
-            prefix = '&';
-        this.url = url + prefix + 'callback=' + this.random;
     };
 
     JSONPRequest.prototype.send = function(data) {
         // Set up callback.
-        var _this = this;
-        window[this.random] = function(json) {
-            // Call the user's callback.
-            _this.onreadystatechange(json);
-            // Cleanup.
-            delete window[_this.random];
-            var sTag = document.getElementById(_this.random)
-            document.getElementsByTagName('body')[0].removeChild(sTag);
-        };
+        window[this.random] = (function(json) {
+            this.onsuccess(json);
+        }).proxy(this);
         // Create script tag.
+        var prefix = '?';
+        var url = this.options.url;
+        if (url.indexOf(prefix) != -1)
+            prefix = '&';
+        url += prefix + 'callback=' + this.random;
         var sTag = document.createElement('script');
         sTag.setAttribute('id', this.random);
         sTag.setAttribute('type', 'text/javascript');
-        sTag.setAttribute('src', this.url);
+        sTag.setAttribute('src', url);
         // Insert script tag to start the request.
         document.getElementsByTagName('body')[0].appendChild(sTag);
-        // TODO: handle failure by using onload? setTimeout()?
+        // Set timeout to handle error conditions.
+        this.timer = window.setTimeout(this.onfailure.proxy(this), 10000);
+    };
+
+    JSONPRequest.prototype.onsuccess = function(json) {
+        if (typeof this.options.success == "function") {
+            // Don't let errors in the callback derail us.
+            try {
+                this.options.success(json);
+            } catch (e) {}
+        }
+        window.clearTimeout(this.timer);
+        this.done();
+    };
+
+    JSONPRequest.prototype.onfailure = function() {
+        if (typeof this.options.failure == "function") {
+            // Don't let errors in the callback derail us.
+            try {
+                this.options.failure();
+            } catch (e) {}
+        }
+        this.done();
+    };
+
+    JSONPRequest.prototype.done = function() {
+        // Cleanup, don't die if we cleanup twice.
+        if (window[this.random])
+            delete window[this.random];
+        var sTag = document.getElementById(this.random);
+        if (sTag)
+            document.getElementsByTagName('body')[0].removeChild(sTag);
+    };
+
+    var XHRRequest = function(options, request) {
+        this.options = options;
+        if (!request)
+            request = new XMLHttpRequest();
+        this.request = request;
+    };
+
+    XHRRequest.prototype.open = function() {
+        this.request.open(this.options.method, this.options.url, true);
+        this.request.onreadystatechange = (function() {
+            this.onreadystatechange();
+        }).proxy(this);
+    };
+
+    XHRRequest.prototype.send = function() {
+        this.request.send(this.options.data);
+    };
+
+    XHRRequest.prototype.onreadystatechange = function(e) {
+        if (this.request.readyState == 4) {
+            var failure = false;
+            if (200 >= this.request.status < 300) {
+                var json;
+                try {
+                    json = eval('(' + this.request.responseText + ')');
+                } catch (e) {
+                    failure = true;
+                }
+                this.onsuccess(json);
+            } else
+                failure = true;
+            if (failure)
+                this.onfailure();
+        }
+    };
+
+    XHRRequest.prototype.onsuccess = function(json) {
+        if (typeof this.options.success == "function") {
+            // Don't let errors in the callback derail us.
+            try {
+                this.options.success(json);
+            } catch (e) {}
+        }
+    };
+
+    XHRRequest.prototype.onfailure = function() {
+        if (typeof this.options.failure == "function") {
+            // Don't let errors in the callback derail us.
+            try {
+                this.options.failure();
+            } catch (e) {}
+        }
     };
 
     return {
-        JSONPRequest: JSONPRequest,
-
         /* Creates a Request object of the correct type and performs an ajax call. */
-        makeRequest: function(method, url, data, callback) {
-            // TODO: determine if the call is cross-domain or not. If not, just use XmlHttpRequest.
-            var request = null;
-            if (XMLHttpRequest) {
-                var request = new XMLHttpRequest();
-                if (request.withCredentials === undefined) {
-                    if (XDomainRequest)
-                        request = XDomainRequest();
-                    else
-                        request = null;
-                }
+        makeRequest: function(options) {
+            if (!options.method)
+                throw "Missing required parameter method";
+            if (!options.url)
+                throw "Missing required parameter url";
+            if (options.data && options.method == 'GET') {
+                var prefix = '?';
+                if (options.url.indexOf(prefix) != -1)
+                    prefix = '&';
+                options.url += prefix + data;
+                options.data = null;
             }
-            if (request == null) {
-                request = JSONPRequest();
-                request.onreadystatechange = callback;
-            } else {
-                request.onreadystatechange = function(e) {
-                    if (request.readyState == 4) {
-                        if (request.status >= 200 && request.status < 300)
-                            callback(eval('(' + request.responseText + ')'));
-                        // TODO: handle failure.
-                    }
-                }
+            // TODO: determine if the call is cross-domain or not. If not, just use XMLHttpRequest.
+            var local = false;
+            var prot = new RegExp('^https{0,1}://');
+            if (prot.test(options.url)) {
+                var host = new RegExp(location.host);
+                if (!host.test(options.url))
+                    local = false;
             }
-            if (request == 'GET')
-                url += '?' + data;
-            request.open(method, url, true);
-            if (data && request != 'GET')
-                request.send(data);
+            var request = new XMLHttpRequest();
+            if (local || request.withCredentials !== undefined)
+                request = new XHRRequest(options, request);
             else
-                request.send();
+                request = new JSONPRequest(options);
+            request.open();
+            request.withCredentials = true;
+            request.send();
             return request;
+        },
+
+        User: {
+        },
+
+        Site: {
+        },
+
+        Path: {
         }
     };
 })();
