@@ -112,7 +112,8 @@ var SmartFile = SmartFile || (function() {
                 } catch (e) {
                     failure = true;
                 }
-                this.onsuccess(json);
+                if (!failure)
+                    this.onsuccess(json);
             } else
                 failure = true;
             if (failure)
@@ -153,7 +154,7 @@ var SmartFile = SmartFile || (function() {
                 options.data = null;
             }
             var local = false;
-            var prot = new RegExp('^https?://');
+            var prot = new RegExp('^https://');
             if (prot.test(options.url)) {
                 var host = new RegExp(location.host);
                 if (!host.test(options.url))
