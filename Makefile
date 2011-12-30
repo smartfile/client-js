@@ -8,5 +8,8 @@ dist: min
 	cp smartfileapi.min.js smartfileapi-$(VERSION)
 	tar czf smartfileapi-$(VERSION).tar.gz smartfileapi-$(VERSION)/smartfileapi.min.js
 
+test:
+	/bin/env python test.py
+
 clean:
 	rm -rf smartfileapi-$(VERSION) smartfileapi.min.js smartfileapi-$(VERSION).tar.gz

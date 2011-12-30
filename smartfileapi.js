@@ -153,7 +153,7 @@ var SmartFile = SmartFile || (function() {
                 options.data = null;
             }
             var local = false;
-            var prot = new RegExp('^https{0,1}://');
+            var prot = new RegExp('^https?://');
             if (prot.test(options.url)) {
                 var host = new RegExp(location.host);
                 if (!host.test(options.url))
