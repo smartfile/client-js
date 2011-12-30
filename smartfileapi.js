@@ -11,12 +11,10 @@ var SmartFile = SmartFile || (function() {
     /* A class that emulates the XmlHttpRequest and XmlDomainRequest object.
      Used when neither can be used for cross-domain requests. */
     var JSONPRequest = function(options) {
-        this.options = options;
-    };
-
-    JSONPRequest.prototype.open = function() {
-        if (this.options.method != 'GET')
+        if (options.method != 'GET')
             throw "Method not supported.";
+        this.options = options;
+        this.timer = null;
         // Generate random identifier for this call.
         this.random = 'jsonp_';
         for (var i = 0; i < 10; i++) {
@@ -25,14 +23,18 @@ var SmartFile = SmartFile || (function() {
         }
     };
 
+    JSONPRequest.prototype.open = function() {
+        return;
+    };
+
     JSONPRequest.prototype.send = function(data) {
         // Set up callback.
         window[this.random] = (function(json) {
             this.onsuccess(json);
         }).proxy(this);
         // Create script tag.
-        var prefix = '?';
         var url = this.options.url;
+        var prefix = '?';
         if (url.indexOf(prefix) != -1)
             prefix = '&';
         url += prefix + 'callback=' + this.random;
@@ -43,7 +45,9 @@ var SmartFile = SmartFile || (function() {
         // Insert script tag to start the request.
         document.getElementsByTagName('body')[0].appendChild(sTag);
         // Set timeout to handle error conditions.
-        this.timer = window.setTimeout(this.onfailure.proxy(this), 10000);
+        this.timer = window.setTimeout((function() {
+            this.onfailure();
+        }).proxy(this), 10000);
     };
 
     JSONPRequest.prototype.onsuccess = function(json) {
@@ -53,7 +57,6 @@ var SmartFile = SmartFile || (function() {
                 this.options.success(json);
             } catch (e) {}
         }
-        window.clearTimeout(this.timer);
         this.done();
     };
 
@@ -69,6 +72,10 @@ var SmartFile = SmartFile || (function() {
 
     JSONPRequest.prototype.done = function() {
         // Cleanup, don't die if we cleanup twice.
+        if (this.timer) {
+            window.clearTimeout(this.timer);
+            this.timer = null;
+        }
         if (window[this.random])
             delete window[this.random];
         var sTag = document.getElementById(this.random);
@@ -85,6 +92,7 @@ var SmartFile = SmartFile || (function() {
 
     XHRRequest.prototype.open = function() {
         this.request.open(this.options.method, this.options.url, true);
+        this.request.withCredentials = true;
         this.request.onreadystatechange = (function() {
             this.onreadystatechange();
         }).proxy(this);
@@ -144,7 +152,6 @@ var SmartFile = SmartFile || (function() {
                 options.url += prefix + data;
                 options.data = null;
             }
-            // TODO: determine if the call is cross-domain or not. If not, just use XMLHttpRequest.
             var local = false;
             var prot = new RegExp('^https{0,1}://');
             if (prot.test(options.url)) {
@@ -158,7 +165,6 @@ var SmartFile = SmartFile || (function() {
             else
                 request = new JSONPRequest(options);
             request.open();
-            request.withCredentials = true;
             request.send();
             return request;
         },
