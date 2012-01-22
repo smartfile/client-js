@@ -1,5 +1,9 @@
+A [SmartFile](http://www.smartfile.com/) Open Source project. [Read more](http://www.smartfile.com/open-source.html) about how SmartFile uses and contributes to Open Source software.
+
+![SmartFile](http://www.smartfile.com/images/logo.jpg)
+
 SmartFile API Client (JavaScript)
-=======
+====
 
 About
 -----
@@ -19,5 +23,5 @@ To test the Ajax library:
 This will start a server for handling the ajax call. Your browser will be started and test.html will be loaded from the file system. This sets up a cross-domain ajax call (localsystem -> localhost).
 
 Contributors
-------------
+----
  * Ben Timby <btimby@gmail.com>
