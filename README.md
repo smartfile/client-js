@@ -1,7 +1,10 @@
-![SmartFile](http://www.smartfile.com/images/logo.jpg)
+![SmartFile](https://www.smartfile.com/assets/img/logos/smartfile-logo-secondary.png)
 
 SmartFile API Client (JavaScript)
 ====
+Depreciated
+-----
+Development on this client will not continue. In the future, we will be working on a node client as an alternative.
 
 About
 -----
